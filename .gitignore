@@ -1,2 +1,5 @@
-
 .DS_Store
+nobsenv
+__pycache__
+instance
+sessions

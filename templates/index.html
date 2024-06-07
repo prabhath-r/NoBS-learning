@@ -12,10 +12,20 @@
             padding: 0;
         }
         #header {
-            background-color: #4CAF50; /* Change to green */
+            background-color: #4CAF50;
             color: white;
-            padding: 15px;
-            text-align: center;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 5px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #header-left .nobs-learn {
+            font-size: 1.8em;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
         }
         #main-container {
             display: flex;
@@ -33,7 +43,7 @@
             max-width: 600px;
         }
         .card h2 {
-            color: #4CAF50; /* Change to green */
+            color: #4CAF50;
             margin-bottom: 20px;
         }
         .form-group {
@@ -52,7 +62,7 @@
             font-size: 16px;
         }
         .form-group button {
-            background-color: #4CAF50; /* Change to green */
+            background-color: #4CAF50;
             color: white;
             border: none;
             cursor: pointer;
@@ -73,7 +83,9 @@
 </head>
 <body>
     <div id="header">
-        <h1>Quiz App</h1>
+        <div id="header-left">
+            <span class="nobs-learn" onclick="window.location.href='/'">NoBS Learn</span>
+        </div>
     </div>
     <div id="main-container">
         <div class="card">
@@ -81,9 +93,9 @@
             <div class="form-group">
                 <label for="skill">Skill:</label>
                 <select id="skill" name="skill">
-                    <option value="Python">Python</option>
-                    <option value="Machine Learning">Machine Learning</option>
-                    <option value="Neural Networks">Neural Networks</option>
+                    {% for skill in skills %}
+                        <option value="{{ skill }}">{{ skill }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="form-group">
@@ -92,7 +104,7 @@
                     <option value="Easy">Easy</option>
                     <option value="Medium">Medium</option>
                     <option value="Hard">Hard</option>
-                    <option value="Mastery">Mastery</option> <!-- Ensure it's named Mastery -->
+                    <option value="Mastery">Mastery</option>
                 </select>
             </div>
             <div class="form-group">

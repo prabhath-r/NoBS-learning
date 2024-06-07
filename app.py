@@ -6,12 +6,13 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
-app.secret_key = 'your_secret_key'  # Ensure you have a secret key set
 db.init_app(app)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    skills = db.session.query(Question.skill).distinct().all()
+    skills = [skill[0] for skill in skills]
+    return render_template('index.html', skills=skills)
 
 @app.route('/questions', methods=['GET'])
 def questions():
@@ -22,20 +23,24 @@ def questions():
     session['correct_answers'] = 0
     session['total_questions'] = 0
     session['start_time'] = datetime.now().isoformat()
+    session['seen_questions'] = []
     return render_template('questions.html', skill=skill, difficulty=difficulty)
 
 @app.route('/get_question', methods=['POST'])
 def get_question():
     skill = request.form['skill']
     difficulty = request.form['difficulty'].lower()
+    seen_questions = session.get('seen_questions', [])
 
     if difficulty == 'mastery':
-        questions = Question.query.filter_by(skill=skill).order_by(db.func.random()).all()
+        questions = Question.query.filter(Question.skill == skill, Question.id.notin_(seen_questions)).order_by(db.func.random()).all()
     else:
-        questions = Question.query.filter_by(skill=skill, difficulty=difficulty).order_by(db.func.random()).all()
+        questions = Question.query.filter(Question.skill == skill, Question.difficulty == difficulty, Question.id.notin_(seen_questions)).order_by(db.func.random()).all()
 
     if questions:
         question = questions[0]
+        seen_questions.append(question.id)
+        session['seen_questions'] = seen_questions
         return jsonify({
             'id': question.id,
             'question': question.question,
@@ -43,7 +48,8 @@ def get_question():
             'is_multiple_choice': question.is_multiple_choice
         })
     else:
-        return jsonify({'message': 'No questions found'})
+        session['seen_questions'] = []
+        return jsonify({'message': 'No questions found. Resetting seen questions list. Please try again.'})
 
 @app.route('/submit_answer', methods=['POST'])
 def submit_answer():

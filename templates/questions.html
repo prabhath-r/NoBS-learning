@@ -4,19 +4,93 @@
     <meta charset="UTF-8">
     <title>Questions</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        /* Dropdown container */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        /* Dropdown content (hidden by default) */
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+
+        /* Links inside the dropdown */
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        /* Change color of dropdown links on hover */
+        .dropdown-content a:hover {background-color: #f1f1f1}
+
+        /* Show the dropdown menu on hover */
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        /* Dropdown button */
+        .dropbtn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        /* Hover effect for dropdown button */
+        .dropbtn:hover {
+            background-color: #45a049;
+        }
+
+        .difficulty {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .mcq-option {
+            font-size: 1.27em;
+            margin: 5px 0;
+        }
+    </style>
 </head>
 <body>
     <div id="header">
         <div id="header-left">
-            <button id="homeButton" class="btn" onclick="window.location.href='/'">Home</button>
+            <span class="nobs-learn" onclick="window.location.href='/'">NoBS Learn</span>
         </div>
         <div id="header-title">Skills Practice - {{ skill }}</div>
         <div id="header-right">
-            <div id="difficultyContainer" class="difficulty {{ difficulty.lower() }}">{{ difficulty.capitalize() }}</div>
+            <div id="difficultyContainer" class="difficulty {{ difficulty.lower() }}">
+                <span id="difficultyText">{{ difficulty.capitalize() }}</span>
+            </div>
+            <div class="dropdown">
+                <button class="dropbtn">&#9660;</button>
+                <div class="dropdown-content">
+                    <a href="#" onclick="changeDifficulty('easy')">Easy</a>
+                    <a href="#" onclick="changeDifficulty('medium')">Medium</a>
+                    <a href="#" onclick="changeDifficulty('hard')">Hard</a>
+                    <a href="#" onclick="changeDifficulty('mastery')">Mastery</a>
+                </div>
+            </div>
             <div id="timer">Timer: 00:00:00</div>
             <button id="pauseButton" class="btn" onclick="pauseSession()">Pause</button>
             <button id="resumeButton" class="btn" onclick="resumeSession()" style="display: none;">Resume</button>
-            <button id="endButton" class="btn" onclick="endSession()">End Session</button>
+            <button id="endButton" class="btn" onclick="confirmEndSession()">End Session</button>
         </div>
     </div>
     <div class="navigation">
@@ -34,6 +108,9 @@
         let timerInterval;
         let questionHistory = [];
         let questionIndex = -1;
+        let confirmEnd = false;
+
+        document.addEventListener('keydown', handleKeydown);
 
         function startTimer() {
             timerInterval = setInterval(() => {
@@ -52,6 +129,16 @@
             startTimer();
             document.getElementById('resumeButton').style.display = 'none';
             document.getElementById('pauseButton').style.display = 'block';
+        }
+
+        function confirmEndSession() {
+            confirmEnd = true;
+            const confirmResult = confirm('Do you really want to end the session?');
+            if (confirmResult) {
+                endSession();
+            } else {
+                confirmEnd = false;
+            }
         }
 
         function endSession() {
@@ -73,7 +160,7 @@
 
         function fetchQuestion() {
             const skill = '{{ skill }}';
-            const difficulty = '{{ difficulty }}';
+            const difficulty = document.getElementById('difficultyText').innerText.toLowerCase();
 
             fetch('/get_question', {
                 method: 'POST',
@@ -85,10 +172,12 @@
             .then(response => response.json())
             .then(data => {
                 if (data.message) {
-                    document.getElementById('questionContainer').innerHTML = `<p>${data.message}</p>`;
+                    fetchQuestion();
                     return;
                 }
                 currentQuestionId = data.id;
+                questionHistory.push(data);
+                questionIndex++;
                 displayQuestion(data);
             })
             .catch(error => console.error('Error fetching question:', error));
@@ -110,14 +199,14 @@
                 }
             }
             container.innerHTML += `<form>${optionsHtml}</form>`;
-            addSubmitAndSkipButtons();
+            addSubmitAndRetryButtons();
         }
 
-        function addSubmitAndSkipButtons() {
+        function addSubmitAndRetryButtons() {
             const controls = document.getElementById('question-controls');
             controls.innerHTML = `
-                <button id="submitButton" class="btn" onclick="submitAnswer()">Submit</button>
-                <button id="skipButton" class="btn" onclick="skipQuestion()">Skip</button>
+                <button id="submitButton" class="btn" onclick="submitAnswer()">Answer</button>
+                <button id="retryButton" class="btn" onclick="retryQuestion()" style="display: none;">Retry</button>
                 <button id="nextQuestionButton" class="btn" onclick="nextQuestion()" style="display: none;">Next Question</button>
             `;
         }
@@ -147,10 +236,11 @@
             .then(response => response.json())
             .then(data => {
                 const feedback = document.getElementById('feedback');
-                feedback.innerHTML = ''; // Clear previous feedback
+                feedback.innerHTML = '';
                 if (type === 'radio') {
                     const options = form.querySelectorAll('input[name="answer"]');
                     options.forEach(option => {
+                        option.disabled = true;
                         if (option.value === answer[0]) {
                             if (data.correct) {
                                 option.parentNode.innerHTML += `<span class="correct">&#10004; Correct!</span>`;
@@ -165,6 +255,7 @@
                 } else if (type === 'checkbox') {
                     const options = form.querySelectorAll('input[name="answer"]');
                     options.forEach(option => {
+                        option.disabled = true;
                         if (answer.includes(option.value)) {
                             if (data.correct_answer.includes(option.value)) {
                                 option.parentNode.innerHTML += `<span class="correct">&#10004; Correct!</span>`;
@@ -177,32 +268,147 @@
                         }
                     });
                 }
-                document.getElementById('submitButton').disabled = true;
+                document.getElementById('submitButton').style.display = 'none';
                 document.getElementById('nextQuestionButton').style.display = 'block';
+                document.getElementById('retryButton').style.display = 'block';
             })
             .catch(error => console.error('Error submitting answer:', error));
         }
 
+        function retryQuestion() {
+            const feedback = document.getElementById('feedback');
+            feedback.innerHTML = ''; // Clear previous feedback
+            const form = document.querySelector('form');
+            const inputs = form.querySelectorAll('input[name="answer"]');
+            inputs.forEach(input => {
+                input.checked = false;
+                input.disabled = false;
+                input.parentNode.style.color = '';
+                input.parentNode.style.backgroundColor = '';
+            });
+            document.querySelectorAll('.correct, .incorrect, .correct-answer').forEach(element => element.remove());
+            document.getElementById('submitButton').style.display = 'block';
+            document.getElementById('nextQuestionButton').style.display = 'none';
+            document.getElementById('retryButton').style.display = 'none';
+        }
+
         function prevQuestion() {
+            console.log('Prev button clicked');
             if (questionIndex > 0) {
                 questionIndex--;
                 displayQuestion(questionHistory[questionIndex]);
-                document.getElementById('feedback').innerHTML = ''; // Clear previous feedback
-                document.getElementById('submitButton').disabled = false;
+                document.getElementById('feedback').innerHTML = '';
+                document.getElementById('retryButton').style.display = 'none';
+                document.getElementById('submitButton').style.display = 'block';
                 document.getElementById('nextQuestionButton').style.display = 'none';
             }
         }
 
         function nextQuestion() {
+            console.log('Next button clicked');
             if (questionIndex < questionHistory.length - 1) {
                 questionIndex++;
                 displayQuestion(questionHistory[questionIndex]);
                 document.getElementById('feedback').innerHTML = ''; 
-                document.getElementById('submitButton').disabled = false;
+                document.getElementById('retryButton').style.display = 'none';
+                document.getElementById('submitButton').style.display = 'block';
                 document.getElementById('nextQuestionButton').style.display = 'none';
             } else {
                 fetchQuestion();
             }
+        }
+
+        function handleKeydown(event) {
+            switch (event.key) {
+                case '1':
+                    selectOptionByNumber(1);
+                    break;
+                case '2':
+                    selectOptionByNumber(2);
+                    break;
+                case '3':
+                    selectOptionByNumber(3);
+                    break;
+                case '4':
+                    selectOptionByNumber(4);
+                    break;
+                case 'a':
+                case 'A':
+                    selectOptionByLetter('a');
+                    break;
+                case 'b':
+                case 'B':
+                    selectOptionByLetter('b');
+                    break;
+                case 'c':
+                case 'C':
+                    selectOptionByLetter('c');
+                    break;
+                case 'd':
+                case 'D':
+                    selectOptionByLetter('d');
+                    break;
+                case 'ArrowLeft':
+                    prevQuestion();
+                    break;
+                case 'ArrowRight':
+                    nextQuestion();
+                    break;
+                case 'Enter':
+                    const submitButton = document.getElementById('submitButton');
+                    const nextQuestionButton = document.getElementById('nextQuestionButton');
+                    const retryButton = document.getElementById('retryButton');
+                    if (submitButton && submitButton.style.display !== 'none') {
+                        submitButton.click();
+                    } else if (nextQuestionButton && nextQuestionButton.style.display !== 'none') {
+                        nextQuestionButton.click();
+                    } else if (retryButton && retryButton.style.display !== 'none') {
+                        retryButton.click();
+                    }
+                    break;
+                case 'r':
+                case 'R':
+                    retryQuestion();
+                    break;
+                case ' ':
+                case 'p':
+                case 'P':
+                    if (document.getElementById('pauseButton').style.display === 'none') {
+                        resumeSession();
+                    } else {
+                        pauseSession();
+                    }
+                    break;
+                case 'Escape':
+                    confirmEndSession();
+                    break;
+            }
+        }
+
+        function selectOptionByNumber(number) {
+            const options = document.querySelectorAll('input[name="answer"]');
+            if (options.length >= number) {
+                options[number - 1].checked = true;
+            }
+        }
+
+        function selectOptionByLetter(letter) {
+            const options = document.querySelectorAll('input[name="answer"]');
+            const letters = ['a', 'b', 'c', 'd'];
+            const index = letters.indexOf(letter.toLowerCase());
+            if (index >= 0 && options.length > index) {
+                options[index].checked = true;
+            }
+        }
+
+        function changeDifficulty(newDifficulty) {
+            const difficultyContainer = document.getElementById('difficultyContainer');
+            const difficultyText = document.getElementById('difficultyText');
+            const difficultyClasses = ['easy', 'medium', 'hard', 'mastery'];
+            difficultyClasses.forEach(dc => difficultyContainer.classList.remove(dc));
+            difficultyContainer.classList.add(newDifficulty.toLowerCase());
+            difficultyText.innerText = newDifficulty.charAt(0).toUpperCase() + newDifficulty.slice(1);
+            fetchQuestion();
         }
 
         fetchQuestion();

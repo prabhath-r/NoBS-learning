@@ -4,9 +4,11 @@ from app import db, app
 from models import Question
 
 def create_db():
-    with app.app_context():
-        db.create_all()
-        print("Database tables created.")
+    try:
+        with app.app_context():
+            db.create_all()
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
 
 def check_db_content():
     with app.app_context():
@@ -40,15 +42,11 @@ def load_questions(filename):
 
 def populate_db():
     with app.app_context():
-        python_questions = load_questions('jsonl_files/python_questions.jsonl')
-        ml_questions = load_questions('jsonl_files/ml_questions.jsonl')
-        nn_questions = load_questions('jsonl_files/nn_questions.jsonl')
+        jsonl_files_path = 'jsonl_files'
+        jsonl_files = [f for f in os.listdir(jsonl_files_path) if f.endswith('.jsonl')]
 
-        print(f"Loaded {len(python_questions)} Python questions")
-        print(f"Loaded {len(ml_questions)} Machine Learning questions")
-        print(f"Loaded {len(nn_questions)} Neural Networks questions")
-
-        for questions in [python_questions, ml_questions, nn_questions]:
+        for jsonl_file in jsonl_files:
+            questions = load_questions(os.path.join(jsonl_files_path, jsonl_file))
             for q in questions:
                 question = Question(
                     skill=q['skill'],
@@ -64,29 +62,20 @@ def populate_db():
         print("Database populated with questions.")
 
 if __name__ == '__main__':
-    print("Setting up database...")
+    print("Setting up database.....")
 
-    # Ensure the instance directory exists
     os.makedirs('instance', exist_ok=True)
     os.chmod('instance', 0o755)
 
-    # Remove existing database if it exists
     db_path = 'instance/app.db'
     if os.path.exists(db_path):
         os.remove(db_path)
 
-    # Create the database
-    create_db()
-
-    # Set permissions for the app.db file
     if os.path.exists(db_path):
-        os.chmod(db_path, 0o644)
+        os.chmod(db_path, 0o644) ##gives permissions
 
-    # Populate the database with questions
-    populate_db()
+    create_db()  ##Create the database
+    populate_db()  ## Populate the database with questions
 
-    # Check database content
-    check_db_content()
-
-    # Check database configuration
-    check_db()
+    # check_db_content() ## Check database content
+    # check_db()  ## Check database configuration
