@@ -21,6 +21,10 @@ pip install -r requirements.txt
 echo "Ensuring instance and sessions directories exist..."
 mkdir -p instance sessions
 
+# Set the correct permissions
+chmod 777 instance
+chmod 666 instance/app.db
+
 # Initialize the database
 echo "Initializing the database..."
 python manage_db.py
