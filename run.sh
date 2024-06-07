@@ -1,6 +1,14 @@
 #!/bin/bash
 
+# Create a log file for capturing the output and errors
+LOGFILE="deploy.log"
+exec > >(tee -i $LOGFILE)
+exec 2>&1
+
+echo "Starting deployment script..."
+
 # Ensure the script is executable
+echo "Setting executable permissions for run.sh..."
 chmod +x run.sh
 
 export FLASK_APP=app.py
@@ -10,24 +18,26 @@ export DATABASE_URL="sqlite:///$(pwd)/instance/app.db"
 
 # Create a virtual environment
 echo "Creating virtual environment..."
-python3 -m venv nobsenv
-source nobsenv/bin/activate
+python3 -m venv nobsenv || { echo "Failed to create virtual environment"; exit 1; }
+source nobsenv/bin/activate || { echo "Failed to activate virtual environment"; exit 1; }
 
 # Install dependencies
 echo "Installing dependencies..."
-pip install -r requirements.txt 
+pip install -r requirements.txt || { echo "Failed to install dependencies"; exit 1; }
 
 # Ensure the instance and sessions directories exist
 echo "Ensuring instance and sessions directories exist..."
-mkdir -p instance sessions
+mkdir -p instance sessions || { echo "Failed to create directories"; exit 1; }
 
 # Set the correct permissions
-chmod 777 instance
-chmod 666 instance/app.db
+echo "Setting permissions for instance directory and app.db..."
+chmod 777 instance || { echo "Failed to set permissions for instance directory"; exit 1; }
+touch instance/app.db || { echo "Failed to create app.db file"; exit 1; }
+chmod 666 instance/app.db || { echo "Failed to set permissions for app.db"; exit 1; }
 
 # Initialize the database
 echo "Initializing the database..."
-python manage_db.py
+python manage_db.py || { echo "Failed to initialize database"; exit 1; }
 
 # List the contents of the instance directory for verification
 echo "Contents of the instance directory:"
@@ -35,4 +45,6 @@ ls -la instance
 
 # Start the server
 echo "Starting Gunicorn..."
-gunicorn -w 4 -b 0.0.0.0:10000 app:app  # Start the server
+gunicorn -w 4 -b 0.0.0.0:10000 app:app || { echo "Failed to start Gunicorn"; exit 1; }
+
+echo "Deployment script finished."
