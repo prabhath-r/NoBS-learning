@@ -1,40 +1,23 @@
 #!/bin/bash
 
-# Create a log file for capturing the output and errors
+# uncomment below to create a log file for capturing the output and errors for duration of run
+'''
 LOGFILE="deploy.log"
 exec > >(tee -i $LOGFILE)
 exec 2>&1
+'''
 
-echo "Starting deployment script..."
+chmod +x run.sh ## makes the bash executable
 
-# Ensure the script is executable
-echo "Setting executable permissions for run.sh..."
-chmod +x run.sh
+export DATABASE_URL="sqlite:///$(pwd)/instance/app.db" # export environment variable (works, but need to change to read from ext env var)
 
+mkdir -p instance sessions || { echo "Failed to create directories"; exit 1; } ## create sessions directory to track progress locally
 
-export DATABASE_URL="sqlite:///$(pwd)/instance/app.db"
-echo "DATABASE_URL=$DATABASE_URL"
-
-# Ensure the instance and sessions directories exist
-echo "Ensuring instance and sessions directories exist..."
-mkdir -p instance sessions || { echo "Failed to create directories"; exit 1; }
-
-# Set the correct permissions
-echo "Setting permissions for instance directory and app.db..."
-chmod 777 instance || { echo "Failed to set permissions for instance directory"; exit 1; }
+## reqd permissions to run the bash script
+chmod 777 instance || { echo "Failed to set permissions for instance directory"; exit 1; } 
 touch instance/app.db || { echo "Failed to create app.db file"; exit 1; }
 chmod 666 instance/app.db || { echo "Failed to set permissions for app.db"; exit 1; }
 
-# Initialize the database
-echo "Initializing the database..."
-python3 manage_db.py || { echo "Failed to initialize database"; exit 1; }
+python3 manage_db.py || { echo "Failed to initialize database"; exit 1; } ## creates, loads, checks and shows the db functionality from jsonl files
 
-# List the contents of the instance directory for verification
-echo "Contents of the instance directory:"
-ls -la instance
-
-# Start the server
-echo "Starting Gunicorn..."
-gunicorn -w 4 -b 0.0.0.0:10000 app:app || { echo "Failed to start Gunicorn"; exit 1; }
-
-echo "Deployment script finished."
+gunicorn -w 4 -b 0.0.0.0:10000 app:app || { echo "Failed to start Gunicorn"; exit 1; } ## starts the server locally at (http://0.0.0.0:10000)
