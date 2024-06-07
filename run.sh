@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Ensure the script is executable
-# chmod +x run.sh
+chmod +x run.sh
 
 export FLASK_APP=app.py
 export FLASK_ENV=production
