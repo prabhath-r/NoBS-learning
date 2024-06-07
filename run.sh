@@ -11,19 +11,17 @@ echo "Starting deployment script..."
 echo "Setting executable permissions for run.sh..."
 chmod +x run.sh
 
+# Export environment variables
 export FLASK_APP=app.py
 export FLASK_ENV=production
 export SECRET_KEY='your_secret_key'
 export DATABASE_URL="sqlite:///$(pwd)/instance/app.db"
 
-# Create a virtual environment
-echo "Creating virtual environment..."
-python3 -m venv nobsenv || { echo "Failed to create virtual environment"; exit 1; }
-source nobsenv/bin/activate || { echo "Failed to activate virtual environment"; exit 1; }
-
-# Install dependencies
-echo "Installing dependencies..."
-pip install -r requirements.txt || { echo "Failed to install dependencies"; exit 1; }
+echo "Environment variables set:"
+echo "FLASK_APP=$FLASK_APP"
+echo "FLASK_ENV=$FLASK_ENV"
+echo "SECRET_KEY=$SECRET_KEY"
+echo "DATABASE_URL=$DATABASE_URL"
 
 # Ensure the instance and sessions directories exist
 echo "Ensuring instance and sessions directories exist..."
@@ -48,3 +46,4 @@ echo "Starting Gunicorn..."
 gunicorn -w 4 -b 0.0.0.0:10000 app:app || { echo "Failed to start Gunicorn"; exit 1; }
 
 echo "Deployment script finished."
+run.sh for Render setup
