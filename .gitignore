@@ -3,3 +3,4 @@ nobsenv
 __pycache__
 instance
 sessions
+deploy.log

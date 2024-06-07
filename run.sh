@@ -35,7 +35,7 @@ chmod 666 instance/app.db || { echo "Failed to set permissions for app.db"; exit
 
 # Initialize the database
 echo "Initializing the database..."
-python manage_db.py || { echo "Failed to initialize database"; exit 1; }
+python3 manage_db.py || { echo "Failed to initialize database"; exit 1; }
 
 # List the contents of the instance directory for verification
 echo "Contents of the instance directory:"
