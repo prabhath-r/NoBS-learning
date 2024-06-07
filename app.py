@@ -1,12 +1,19 @@
+import os
+import shutil
+import json
+import signal
 from flask import Flask, render_template, request, jsonify, session
 from models import db, Question
-import os 
-import json
 from datetime import datetime
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
 db.init_app(app)
+
+# Clear the sessions directory on app start
+sessions_dir = os.path.join(app.instance_path, 'sessions')
+if not os.path.exists(sessions_dir):
+    os.makedirs(sessions_dir)
 
 @app.route('/')
 def index():
@@ -89,7 +96,7 @@ def end_session():
 
     # Save session data to a file
     session_filename = f"session_{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
-    with open(os.path.join('sessions', session_filename), 'w') as f:
+    with open(os.path.join(sessions_dir, session_filename), 'w') as f:
         json.dump(session_data, f)
 
     return jsonify(session_data)
@@ -97,17 +104,32 @@ def end_session():
 @app.route('/recent_sessions')
 def recent_sessions():
     session_files = sorted(
-        [f for f in os.listdir('sessions') if f.startswith('session_')],
-        key=lambda x: os.path.getmtime(os.path.join('sessions', x)),
+        [f for f in os.listdir(sessions_dir) if f.startswith('session_')],
+        key=lambda x: os.path.getmtime(os.path.join(sessions_dir, x)),
         reverse=True
     )
     recent_sessions = []
     for session_file in session_files[:10]:
-        with open(os.path.join('sessions', session_file), 'r') as f:
+        with open(os.path.join(sessions_dir, session_file), 'r') as f:
             session_data = json.load(f)
             recent_sessions.append(session_data)
 
     return jsonify(recent_sessions)
+
+def clear_sessions_on_shutdown(*args):
+    for filename in os.listdir(sessions_dir):
+        file_path = os.path.join(sessions_dir, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print(f'Failed to delete {file_path}. Reason: {e}')
+    print("Session data cleared on shutdown.")
+
+signal.signal(signal.SIGTERM, clear_sessions_on_shutdown)
+signal.signal(signal.SIGINT, clear_sessions_on_shutdown)
 
 if __name__ == "__main__":
     app.run(port=8000, debug=True)

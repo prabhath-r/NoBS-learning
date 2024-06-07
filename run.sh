@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# uncomment below to create a log file for capturing the output and errors for duration of run
-'''
+# Comment out the log file creation
+: '
 LOGFILE="deploy.log"
 exec > >(tee -i $LOGFILE)
 exec 2>&1
-'''
+'
 
 chmod +x run.sh ## makes the bash executable
 
