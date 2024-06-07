@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Questions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div id="header">
+        <div id="header-left">
+            <button id="homeButton" class="btn" onclick="window.location.href='/'">Home</button>
+        </div>
+        <div id="header-title">Skills Practice - {{ skill }}</div>
+        <div id="header-right">
+            <div id="difficultyContainer" class="difficulty {{ difficulty.lower() }}">{{ difficulty.capitalize() }}</div>
+            <div id="timer">Timer: 00:00:00</div>
+            <button id="pauseButton" class="btn" onclick="pauseSession()">Pause</button>
+            <button id="resumeButton" class="btn" onclick="resumeSession()" style="display: none;">Resume</button>
+            <button id="endButton" class="btn" onclick="endSession()">End Session</button>
+        </div>
+    </div>
+    <div class="navigation">
+        <button id="prevButton" class="nav-btn" onclick="prevQuestion()">&#9664;</button>
+        <div class="container">
+            <div id="questionContainer"></div>
+            <div id="question-controls" class="controls"></div>
+            <div id="feedback"></div>
+        </div>
+        <button id="nextButton" class="nav-btn" onclick="nextQuestion()">&#9654;</button>
+    </div>
+    <script>
+        let currentQuestionId = null;
+        let timer = 0;
+        let timerInterval;
+        let questionHistory = [];
+        let questionIndex = -1;
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timer++;
+                document.getElementById('timer').innerText = `Timer: ${new Date(timer * 1000).toISOString().substr(11, 8)}`;
+            }, 1000);
+        }
+
+        function pauseSession() {
+            clearInterval(timerInterval);
+            document.getElementById('pauseButton').style.display = 'none';
+            document.getElementById('resumeButton').style.display = 'block';
+        }
+
+        function resumeSession() {
+            startTimer();
+            document.getElementById('resumeButton').style.display = 'none';
+            document.getElementById('pauseButton').style.display = 'block';
+        }
+
+        function endSession() {
+            clearInterval(timerInterval);
+
+            fetch('/end_session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(`Session Ended\nAccuracy: ${data.accuracy}%`);
+                window.location.href = '/';
+            })
+            .catch(error => console.error('Error ending session:', error));
+        }
+
+        function fetchQuestion() {
+            const skill = '{{ skill }}';
+            const difficulty = '{{ difficulty }}';
+
+            fetch('/get_question', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(`skill=${skill}&difficulty=${difficulty}`)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    document.getElementById('questionContainer').innerHTML = `<p>${data.message}</p>`;
+                    return;
+                }
+                currentQuestionId = data.id;
+                displayQuestion(data);
+            })
+            .catch(error => console.error('Error fetching question:', error));
+        }
+
+        function displayQuestion(data) {
+            const container = document.getElementById('questionContainer');
+            container.innerHTML = `<p class="question-text">${data.question}</p>`;
+            let optionsHtml = '';
+            const options = data.options;
+
+            if (data.is_multiple_choice) {
+                for (const [key, value] of Object.entries(options)) {
+                    optionsHtml += `<label class="mcq-option"><input type="checkbox" name="answer" value="${key}"> ${key}: ${value}</label><br>`;
+                }
+            } else {
+                for (const [key, value] of Object.entries(options)) {
+                    optionsHtml += `<label class="mcq-option"><input type="radio" name="answer" value="${key}"> ${key}: ${value}</label><br>`;
+                }
+            }
+            container.innerHTML += `<form>${optionsHtml}</form>`;
+            addSubmitAndSkipButtons();
+        }
+
+        function addSubmitAndSkipButtons() {
+            const controls = document.getElementById('question-controls');
+            controls.innerHTML = `
+                <button id="submitButton" class="btn" onclick="submitAnswer()">Submit</button>
+                <button id="skipButton" class="btn" onclick="skipQuestion()">Skip</button>
+                <button id="nextQuestionButton" class="btn" onclick="nextQuestion()" style="display: none;">Next Question</button>
+            `;
+        }
+
+        function submitAnswer() {
+            let answer = [];
+            const form = document.querySelector('form');
+            const type = form.querySelector('[name="answer"]').type;
+
+            if (type === 'radio') {
+                const selectedOption = form.querySelector('input[name="answer"]:checked');
+                if (selectedOption) {
+                    answer.push(selectedOption.value);
+                }
+            } else if (type === 'checkbox') {
+                const selectedOptions = form.querySelectorAll('input[name="answer"]:checked');
+                selectedOptions.forEach(option => answer.push(option.value));
+            }
+
+            fetch('/submit_answer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: currentQuestionId, answer: answer })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const feedback = document.getElementById('feedback');
+                feedback.innerHTML = ''; // Clear previous feedback
+                if (type === 'radio') {
+                    const options = form.querySelectorAll('input[name="answer"]');
+                    options.forEach(option => {
+                        if (option.value === answer[0]) {
+                            if (data.correct) {
+                                option.parentNode.innerHTML += `<span class="correct">&#10004; Correct!</span>`;
+                            } else {
+                                option.parentNode.innerHTML += `<span class="incorrect">&#10008; Incorrect!</span>`;
+                            }
+                        }
+                        if (option.value === data.correct_answer[0] && !data.correct) {
+                            option.parentNode.innerHTML += `<span class="correct-answer">&#10004; This is the correct answer</span>`;
+                        }
+                    });
+                } else if (type === 'checkbox') {
+                    const options = form.querySelectorAll('input[name="answer"]');
+                    options.forEach(option => {
+                        if (answer.includes(option.value)) {
+                            if (data.correct_answer.includes(option.value)) {
+                                option.parentNode.innerHTML += `<span class="correct">&#10004; Correct!</span>`;
+                            } else {
+                                option.parentNode.innerHTML += `<span class="incorrect">&#10008; Incorrect!</span>`;
+                            }
+                        }
+                        if (data.correct_answer.includes(option.value) && !answer.includes(option.value)) {
+                            option.parentNode.innerHTML += `<span class="correct-answer">&#10004; This option is also correct</span>`;
+                        }
+                    });
+                }
+                document.getElementById('submitButton').disabled = true;
+                document.getElementById('nextQuestionButton').style.display = 'block';
+            })
+            .catch(error => console.error('Error submitting answer:', error));
+        }
+
+        function prevQuestion() {
+            if (questionIndex > 0) {
+                questionIndex--;
+                displayQuestion(questionHistory[questionIndex]);
+                document.getElementById('feedback').innerHTML = ''; // Clear previous feedback
+                document.getElementById('submitButton').disabled = false;
+                document.getElementById('nextQuestionButton').style.display = 'none';
+            }
+        }
+
+        function nextQuestion() {
+            if (questionIndex < questionHistory.length - 1) {
+                questionIndex++;
+                displayQuestion(questionHistory[questionIndex]);
+                document.getElementById('feedback').innerHTML = ''; 
+                document.getElementById('submitButton').disabled = false;
+                document.getElementById('nextQuestionButton').style.display = 'none';
+            } else {
+                fetchQuestion();
+            }
+        }
+
+        fetchQuestion();
+        startTimer();
+    </script>
+</body>
+</html>

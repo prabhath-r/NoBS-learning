@@ -1,0 +1,138 @@
+body {
+    background-color: #f4f4f9;
+    font-family: Arial, sans-serif;
+}
+
+.navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    width: 70%;
+    margin: 50px;
+    padding: 30px;
+    background: #fff;
+    box-shadow: 0px 0px 15px 0px #000;
+    border-radius: 10px;
+}
+
+.question-text {
+    font-size: 1.4em;
+    margin-bottom: 20px;
+}
+
+.mcq-option {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+}
+
+.mcq-option input {
+    margin-right: 10px;
+}
+
+#question-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+}
+
+.btn {
+    padding: 10px 20px;
+    background: #4CAF50;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn:hover {
+    background: #45a049;
+}
+
+.nav-btn {
+    background: transparent;
+    border: none;
+    font-size: 2em;
+    cursor: pointer;
+    color: #4CAF50;
+    transition: color 0.3s;
+}
+
+.nav-btn:hover {
+    color: #45a049;
+}
+
+#header {
+    background-color: #4CAF50;
+    color: white;
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 5px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#header-left, #header-right {
+    display: flex;
+    align-items: center;
+}
+
+#header-left .btn, #header-right .btn {
+    margin-left: 10px;
+    background: #45a049;
+    border-radius: 5px;
+    padding: 5px 10px;
+}
+
+#header-title {
+    font-size: 1.8em;
+    font-weight: bold;
+}
+
+#difficultyContainer {
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-right: 20px;
+    font-weight: bold;
+    color: #fff;
+}
+
+#difficultyContainer.easy {
+    background-color: #ffd700; /* Yellow */
+}
+
+#difficultyContainer.medium {
+    background-color: #ffa500; /* Orange */
+}
+
+#difficultyContainer.hard {
+    background-color: #ff4500; /* Red */
+}
+
+#difficultyContainer.mastery {
+    background-color: #6A5ACD; /* Premium Color */
+}
+
+#timer {
+    margin-right: 20px;
+}
+
+.correct {
+    color: green;
+    margin-left: 10px;
+}
+
+.incorrect {
+    color: red;
+    margin-left: 10px;
+}
+
+.correct-answer {
+    color: green;
+    margin-left: 10px;
+}

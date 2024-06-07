@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        #header {
+            background-color: #4CAF50; /* Change to green */
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        #main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .card {
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px;
+            width: 80%;
+            max-width: 600px;
+        }
+        .card h2 {
+            color: #4CAF50; /* Change to green */
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group select, .form-group button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        .form-group button {
+            background-color: #4CAF50; /* Change to green */
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .form-group button:hover {
+            background-color: #45a049;
+        }
+        .recent-sessions {
+            margin-top: 30px;
+        }
+        .session-item {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>Quiz App</h1>
+    </div>
+    <div id="main-container">
+        <div class="card">
+            <h2>Select Skill and Difficulty</h2>
+            <div class="form-group">
+                <label for="skill">Skill:</label>
+                <select id="skill" name="skill">
+                    <option value="Python">Python</option>
+                    <option value="Machine Learning">Machine Learning</option>
+                    <option value="Neural Networks">Neural Networks</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="difficulty">Difficulty:</label>
+                <select id="difficulty" name="difficulty">
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                    <option value="Mastery">Mastery</option> <!-- Ensure it's named Mastery -->
+                </select>
+            </div>
+            <div class="form-group">
+                <button onclick="startPractice()">Start Practice</button>
+            </div>
+        </div>
+        <div class="card recent-sessions">
+            <h2>Recent Practices</h2>
+            <div id="recentSessionsContainer">
+                <!-- Recent sessions will be loaded here -->
+            </div>
+        </div>
+    </div>
+    <script>
+        function startPractice() {
+            const skill = document.getElementById('skill').value;
+            const difficulty = document.getElementById('difficulty').value;
+            window.location.href = `/questions?skill=${skill}&difficulty=${difficulty}`;
+        }
+
+        function loadRecentSessions() {
+            fetch('/recent_sessions')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('recentSessionsContainer');
+                    container.innerHTML = '';
+                    if (data.length === 0) {
+                        container.innerHTML = '<p>No recent sessions found.</p>';
+                    } else {
+                        data.forEach(session => {
+                            const sessionDiv = document.createElement('div');
+                            sessionDiv.className = 'session-item';
+                            sessionDiv.innerHTML = `
+                                <p><strong>Skill:</strong> ${session.skill}</p>
+                                <p><strong>Difficulty:</strong> ${session.difficulty}</p>
+                                <p><strong>Accuracy:</strong> ${session.accuracy}%</p>
+                                <p><strong>Total Questions:</strong> ${session.total_questions}</p>
+                                <p><strong>Start Time:</strong> ${new Date(session.start_time).toLocaleString()}</p>
+                                <p><strong>End Time:</strong> ${new Date(session.end_time).toLocaleString()}</p>
+                            `;
+                            container.appendChild(sessionDiv);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error loading recent sessions:', error));
+        }
+
+        document.addEventListener('DOMContentLoaded', loadRecentSessions);
+    </script>
+</body>
+</html>
