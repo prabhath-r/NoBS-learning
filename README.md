@@ -1,7 +1,8 @@
 # Get Started in 2 ways
 
 ## Use the App
-Use the [app](https://nobs-learning.onrender.com/) to select questions from [these](https://github.com/prabhath-r/NoBS-learning/tree/main/jsonl_files) topics.  ***Note: The render server may take couple of minutes to boot up.*
+Use the [app](https://nobs-learning.onrender.com/) to select questions from [these](https://github.com/prabhath-r/NoBS-learning/tree/main/jsonl_files) topics.  
+*Note: The render server may take couple of minutes to boot up.*
 
 
 ## Run locally with your own questions(Best Use)
