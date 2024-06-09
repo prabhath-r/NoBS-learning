@@ -94,7 +94,6 @@
         </div>
     </div>
     <div class="navigation">
-        <button id="prevButton" class="nav-btn" onclick="prevQuestion()">&#9664;</button>
         <div class="container">
             <div id="questionContainer"></div>
             <div id="question-controls" class="controls"></div>
@@ -292,18 +291,6 @@
             document.getElementById('retryButton').style.display = 'none';
         }
 
-        function prevQuestion() {
-            console.log('Prev button clicked');
-            if (questionIndex > 0) {
-                questionIndex--;
-                displayQuestion(questionHistory[questionIndex]);
-                document.getElementById('feedback').innerHTML = '';
-                document.getElementById('retryButton').style.display = 'none';
-                document.getElementById('submitButton').style.display = 'block';
-                document.getElementById('nextQuestionButton').style.display = 'none';
-            }
-        }
-
         function nextQuestion() {
             console.log('Next button clicked');
             if (questionIndex < questionHistory.length - 1) {
@@ -347,9 +334,6 @@
                 case 'd':
                 case 'D':
                     selectOptionByLetter('d');
-                    break;
-                case 'ArrowLeft':
-                    prevQuestion();
                     break;
                 case 'ArrowRight':
                     nextQuestion();
